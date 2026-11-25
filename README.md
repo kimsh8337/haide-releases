@@ -168,11 +168,11 @@ VS Code 기본값과 같습니다.
 
 ## 업데이트
 
-Haide 1.0.1부터 앱이 새 버전을 확인합니다(시작할 때, 실행 중 6시간마다, 잠자기에서 깨어날 때). 새 버전이 있으면 상태바 오른쪽에 **업데이트**가 표시되고, 누르면 받기·Homebrew 명령·이 버전 건너뛰기를 고를 수 있습니다. 끄려면 설정 파일에 `"update.check": false`를 넣습니다.
+Haide 1.0.1부터 앱이 새 버전을 확인합니다(시작할 때, 실행 중 6시간마다, 잠자기에서 깨어날 때). 새 버전이 있으면 상태바 오른쪽에 **업데이트**가 표시되고, 누르면 업데이트(Homebrew 설치본)·받기·Homebrew 명령·이 버전 건너뛰기를 고를 수 있습니다. 끄려면 설정 파일에 `"update.check": false`를 넣습니다.
 
-설치는 직접 합니다. 업데이트하기 전에 Haide를 종료(⌘Q)하세요. 실행 중인 에이전트 세션은 유지됩니다.
+직접 설치할 때는 먼저 Haide를 종료(⌘Q)하세요. 어느 방법이든 실행 중인 에이전트 세션은 유지됩니다.
 
-- Homebrew로 설치했다면: `brew upgrade --cask haide`
+- Homebrew로 설치했다면: 알림의 **업데이트**를 누르면 Haide를 종료하고 `brew upgrade --cask haide`로 설치한 뒤 다시 엽니다(1.0.3부터, 저장 확인에서 종료를 취소하면 업데이트도 취소). 직접 하려면 Haide를 종료한 뒤 `brew upgrade --cask haide`.
 - DMG로 설치했다면: [Releases](../../releases)에서 새 버전 DMG를 받아 같은 방법으로 덮어 설치합니다.
 - DMG로 설치했는데 Homebrew로 업데이트하고 싶다면: 한 번만 `brew install --cask --force kimsh8337/haide/haide`(위 'Homebrew' 참고).
 
