@@ -25,6 +25,18 @@ Haide는 macOS용 **IDE + ADE**입니다. AI 에이전트 개발 환경(ADE)과 
 
 ## 설치
 
+### Homebrew
+
+```sh
+brew tap kimsh8337/haide
+brew trust kimsh8337/haide        # 공식 목록 밖의 탭이라 처음 한 번 신뢰 표시가 필요합니다
+brew install --cask kimsh8337/haide/haide
+```
+
+`haide` CLI도 함께 PATH에 등록됩니다. 처음 열 때는 아래 '처음 열 때 경고'를 따릅니다.
+
+### DMG
+
 1. [Releases](../../releases/latest)에서 `Haide-<버전>-arm64.dmg`를 받습니다.
 2. DMG를 열고 **Haide**를 **응용 프로그램(Applications)** 폴더로 끌어 놓습니다.
 3. 처음 실행할 때 아래 '처음 열 때 경고'를 따릅니다.
@@ -148,14 +160,17 @@ VS Code 기본값과 같습니다.
 
 ## 업데이트
 
-아직 자동 업데이트가 없습니다. [Releases](../../releases)에서 새 버전 DMG를 받아 같은 방법으로 덮어 설치합니다.
-덮어 설치하기 전에 Haide를 종료(⌘Q)하세요. 실행 중인 에이전트 세션은 유지됩니다.
+아직 자동 업데이트가 없습니다. 업데이트하기 전에 Haide를 종료(⌘Q)하세요. 실행 중인 에이전트 세션은 유지됩니다.
+
+- Homebrew로 설치했다면: `brew upgrade --cask haide`
+- DMG로 설치했다면: [Releases](../../releases)에서 새 버전 DMG를 받아 같은 방법으로 덮어 설치합니다.
 
 ## 데이터와 삭제
 
 - 설정과 기록은 `~/.haide` 폴더에 저장됩니다.
 - 지우려면 **Haide 메뉴 → Haide 종료 및 모든 세션 종료**로 끈 뒤 `/Applications/Haide.app`을 휴지통에 버립니다.
   설정까지 지우려면 `~/.haide` 폴더도 지웁니다.
+- Homebrew로 설치했다면 `brew uninstall --cask haide`(설정까지 지우려면 `--zap`을 붙입니다).
 
 ## 문제 신고
 
