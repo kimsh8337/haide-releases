@@ -35,6 +35,14 @@ brew install --cask kimsh8337/haide/haide
 
 `haide` CLI도 함께 PATH에 등록됩니다. 처음 열 때는 아래 '처음 열 때 경고'를 따릅니다.
 
+이미 DMG로 설치했다면 Homebrew가 그 앱을 모릅니다(`brew upgrade`가 `Cask 'haide' is not installed`로 실패).
+Haide를 종료(⌘Q)한 뒤 한 번만 아래처럼 설치하면 기존 앱을 덮어쓰고 그다음부터 `brew upgrade`로 업데이트됩니다.
+설정(`~/.haide`)과 실행 중인 에이전트 세션은 그대로 유지됩니다.
+
+```sh
+brew install --cask --force kimsh8337/haide/haide
+```
+
 ### DMG
 
 1. [Releases](../../releases/latest)에서 `Haide-<버전>-arm64.dmg`를 받습니다.
@@ -166,6 +174,7 @@ Haide 1.0.1부터 앱이 새 버전을 확인합니다(시작할 때, 실행 중
 
 - Homebrew로 설치했다면: `brew upgrade --cask haide`
 - DMG로 설치했다면: [Releases](../../releases)에서 새 버전 DMG를 받아 같은 방법으로 덮어 설치합니다.
+- DMG로 설치했는데 Homebrew로 업데이트하고 싶다면: 한 번만 `brew install --cask --force kimsh8337/haide/haide`(위 'Homebrew' 참고).
 
 ## 데이터와 삭제
 
