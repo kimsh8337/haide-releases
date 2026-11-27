@@ -35,9 +35,10 @@ curl -fsSL https://raw.githubusercontent.com/kimsh8337/haide-releases/main/insta
 
 - 최신 릴리스를 받아 체크섬과 서명(Haide 인증서 지문)을 확인한 뒤 `/Applications/Haide.app`에 설치하고 실행합니다.
 - 터미널로 받은 파일은 macOS의 '확인할 수 없는 개발자' 경고 없이 열립니다.
+- Haide가 켜져 있으면 검증이 끝난 뒤 'Haide를 종료하고 설치할까요? [Y/n]'를 묻습니다. Enter로 종료하면 설치 후 다시 엽니다(Haide 터미널 안에서 실행해도 됩니다). 1.0.7부터는 앱의 업데이트 팝오버에서 **지금 설치**를 눌러도 됩니다.
 - 스크립트 내용은 [install.sh](install.sh)에서 미리 볼 수 있습니다.
 - 옵션: `HAIDE_VERSION=1.0.5`(특정 버전), `HAIDE_INSTALL_DIR=~/Applications`(`/Applications`에 쓸 수 없을 때),
-  `HAIDE_NO_OPEN=1`(설치 후 실행 안 함), `HAIDE_NO_WAIT=1`(Haide가 켜져 있으면 기다리지 않고 중단).
+  `HAIDE_NO_OPEN=1`(설치 후 실행 안 함), `HAIDE_NO_WAIT=1`(Haide가 켜져 있으면 기다리지 않고 중단), `HAIDE_QUIT=1`(묻지 않고 Haide 종료).
 
 Homebrew 설치는 지원하지 않습니다. 예전에 Homebrew로 설치했다면 `brew uninstall --cask --force haide`로
 기록을 지운 뒤 위 명령으로 설치합니다(설정 `~/.haide`는 유지됩니다).

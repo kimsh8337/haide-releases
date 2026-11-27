@@ -19,6 +19,7 @@ app_running() {
       command=$(ps -p "$pid" -o comm=) || continue
       # Electron-as-Node daemons and helpers may use the same executable with a JS entrypoint.
       if [[ "$command" =~ $app_command && ! "$command_line" =~ $node_entry ]]; then
+        running_bundle=${command%/Contents/MacOS/Haide}
         return 0
       fi
     done <<< "$processes"
@@ -30,17 +31,74 @@ app_running() {
   fi
 }
 
-wait_for_haide() {
-  if ! app_running; then
-    return
+request_quit() {
+  app_running || return 0
+  reopen_on_failure="$running_bundle"
+  if osascript -e 'tell application id "io.github.kimsh8337.haide" to quit'; then
+    quit_requested=1
+  else
+    printf '%s\n' 'Haide를 직접 종료(⌘Q)하면 설치를 계속합니다'
   fi
-  printf '%s\n' 'Haide를 종료(⌘Q)하면 설치를 계속합니다'
-  [[ "${HAIDE_NO_WAIT:-0}" != 1 ]] || fail 'Haide가 실행 중이어서 설치를 중단합니다.'
+}
+
+stop_if_cancelled() {
+  if [[ -n "${HAIDE_READY_FILE:-}" && -f "$HAIDE_READY_FILE.cancelled" &&
+        ! -L "$HAIDE_READY_FILE.cancelled" ]]; then
+    printf '%s\n' '설치를 취소했습니다.'
+    exit 0
+  fi
+}
+
+wait_for_haide() {
+  local quit_requested=0 answer
+  if [[ -n "${HAIDE_READY_FILE:-}" ]]; then
+    app_running || true
+    # Publish atomically without opening or replacing the destination.
+    local signal
+    signal=$(mktemp "${HAIDE_READY_FILE}.XXXXXX")
+    if ! (printf '%s\n' ready > "$signal" &&
+          [[ ! -e "$HAIDE_READY_FILE" && ! -L "$HAIDE_READY_FILE" ]] &&
+          ln -h "$signal" "$HAIDE_READY_FILE"); then
+      rm -f "$signal"
+      fail '설치 준비 상태를 기록할 수 없습니다.'
+    fi
+    rm -f "$signal"
+    reopen_on_failure="${running_bundle:-$target}"
+    quit_requested=1
+  else
+    app_running || return 0
+    if [[ "${HAIDE_QUIT:-0}" == 1 ]]; then
+      request_quit
+    elif { exec 3<>/dev/tty; } 2>/dev/null; then
+      printf '%s' 'Haide를 종료하고 설치할까요? [Y/n] ' >&3
+      if IFS= read -r answer <&3 && [[ "$answer" =~ ^([yY]|[yY][eE][sS])?$ ]]; then
+        request_quit
+      fi
+      exec 3>&-
+    fi
+  fi
   local deadline=$((SECONDS + 600))
+  local timeout_message='10분 내에 Haide가 종료되지 않아 설치를 중단합니다.'
+  if [[ "$quit_requested" == 1 ]]; then
+    deadline=$((SECONDS + 30))
+    timeout_message='30초 내에 Haide가 종료되지 않아 설치를 중단합니다.'
+  elif app_running; then
+    [[ "${HAIDE_NO_WAIT:-0}" != 1 ]] || fail 'Haide가 실행 중이어서 설치를 중단합니다.'
+    [[ -n "$reopen_on_failure" ]] || printf '%s\n' 'Haide를 직접 종료(⌘Q)하면 설치를 계속합니다'
+  fi
   while app_running; do
-    (( SECONDS < deadline )) || fail '10분 내에 Haide가 종료되지 않아 설치를 중단합니다.'
+    stop_if_cancelled
+    (( SECONDS < deadline )) || fail "$timeout_message"
     sleep 1
   done
+}
+
+open_haide() {
+  if [[ -n "${HAIDE_INSTALL_RESULT:-}" && -n "${HAIDE_HOME:-}" ]]; then
+    open --env "HAIDE_HOME=$HAIDE_HOME" "$1"
+  else
+    open "$1"
+  fi
 }
 
 cleanup() {
@@ -55,16 +113,27 @@ cleanup() {
       if [[ -e "$target" || -L "$target" ]] || ! mv -fh "$previous" "$target"; then
         printf '이전 앱 보존 위치: %s\n' "$previous" >&2
         status=1
+        reopen_on_failure=''
       fi
     fi
   fi
   if [[ -n "$staged" ]]; then
     rm -rf "$staged" || status=1
   fi
+  rm -rf "$temporary" || status=1
+  if [[ "$status" != 0 && "$installed" != 1 && -n "$reopen_on_failure" &&
+        "${HAIDE_NO_OPEN:-0}" != 1 && -d "$reopen_on_failure" ]] && ! app_running; then
+    # Publish the failure before the restored app can start. The parent also
+    # handles failures outside this script, including failure to download it.
+    if [[ -n "${HAIDE_INSTALL_RESULT:-}" && -f "$HAIDE_INSTALL_RESULT" &&
+          ! -L "$HAIDE_INSTALL_RESULT" ]]; then
+      mv -fh "$HAIDE_INSTALL_RESULT" "$HAIDE_INSTALL_RESULT.failed" || true
+    fi
+    open_haide "$reopen_on_failure" || true
+  fi
   if [[ -n "$lock" ]]; then
     rm -f "$lock" || status=1
   fi
-  rm -rf "$temporary" || status=1
   exit "$status"
 }
 
@@ -91,6 +160,8 @@ main() {
   previous=''
   lock=''
   installed=0
+  running_bundle=''
+  reopen_on_failure=''
   trap cleanup EXIT
   trap 'exit 129' HUP
   trap 'exit 130' INT
@@ -121,7 +192,6 @@ main() {
   codesign --verify -R "=$requirement" "$app" || fail 'Haide 앱의 서명 요구 사항이 다릅니다.'
   version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$plist")
 
-  wait_for_haide
   local directory="${HAIDE_INSTALL_DIR:-/Applications}"
   local cannot_write='설치 폴더에 쓸 수 없습니다. HAIDE_INSTALL_DIR=~/Applications 를 지정해 다시 실행하세요.'
   [[ "$directory" == /* ]] || directory="$PWD/$directory"
@@ -158,12 +228,15 @@ main() {
     fail '이전 설치의 임시 파일을 확인하세요.'
   staged="$new_app"
   previous="$old_app"
+  wait_for_haide
+  stop_if_cancelled
   ditto "$app" "$staged"
   # Recursive deletion succeeds when the attribute is absent.
   xattr -dr com.apple.quarantine "$staged"
   if app_running; then
     fail 'Haide가 다시 실행되었습니다. 종료한 뒤 설치를 다시 실행하세요.'
   fi
+  stop_if_cancelled
   if [[ -e "$target" || -L "$target" ]]; then
     [[ -d "$target" && ! -L "$target" ]] || fail "기존 설치 경로가 앱 폴더가 아닙니다: $target"
     mv -fh "$target" "$previous"
@@ -179,7 +252,7 @@ main() {
   fi
   printf 'Haide %s 설치 완료: %s\n' "$version" "$target"
   if [[ "${HAIDE_NO_OPEN:-0}" != 1 ]]; then
-    open "$target"
+    open_haide "$target" || printf '%s\n' 'Haide를 자동으로 열지 못했습니다. 직접 여세요.' >&2
   fi
 }
 
